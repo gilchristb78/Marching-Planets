@@ -34,6 +34,9 @@ public:
 	int NoiseScaler = 16;
 
 	UPROPERTY(EditAnywhere, Category = "Chunk Gen")
+	FVector PlanetCenter = FVector(0,0,0);
+
+	UPROPERTY(EditAnywhere, Category = "Chunk Gen")
 	float Frequency = 0.01f;
 
 	UPROPERTY(EditAnywhere, Category = "Chunk Gen")
