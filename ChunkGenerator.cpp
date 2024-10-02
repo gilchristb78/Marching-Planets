@@ -35,7 +35,7 @@ void AChunkGenerator::RenderChunk(FVector ChunkPos)
 	chunk->FractalLacunarity = FractalLacunarity;
 	chunk->ZoomLevel = ZoomLevel;
 	chunk->VoxelSize = VoxelSize;
-	chunk->PlanetCenter = GetActorLocation();
+	chunk->PlanetCenter = PlanetCenter;
 	UGameplayStatics::FinishSpawningActor(chunk, transform);
 	chunks.Add(ChunkPos, chunk);
 	
@@ -88,11 +88,13 @@ void AChunkGenerator::BeginPlay()
 {
 	Super::BeginPlay();
 
-	for (int x = -DrawDistance; x <= DrawDistance; x++)
+	
+
+	for (int x = -DrawDistance; x <= DrawDistance; x++) //TODO draw distance or PlanetRadius + NoiseScalar, MIN(PR, NS)
 	{
 		for (int y = -DrawDistance; y <= DrawDistance; y++)
 		{
-			for(int z = -DrawDistance; z <= DrawDistance; z++)
+			for(int z = -DrawDistance; z <= DrawDistance; z++) //TODO draw from top down not middle out, allowing for bigger plannets without spawning the whole thing in, just top pole
 			{
 				RenderChunk(FVector(x * ChunkSize.X * VoxelSize, y * ChunkSize.Y * VoxelSize, z * ChunkSize.Z * VoxelSize));
 			}
