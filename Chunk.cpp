@@ -134,7 +134,7 @@ void AChunk::GenerateMesh()
 
 	float GroundCube[8] = {};
 	float WaterCube[8] = {};
-	int sand = 0;
+	int water = 0;
 
 	for (int x = 0; x < ChunkSize.X; x++)
 	{
@@ -142,13 +142,14 @@ void AChunk::GenerateMesh()
 		{
 			for (int z = 0; z < ChunkSize.Z; z++)
 			{
-				sand = 0;
+				water = 0;
 				for (int i = 0; i < 8; i++)
 				{
 					
 					EBlock boxVector = Voxels[GetVoxelIndex(x + VertexOffset[i][0], y + VertexOffset[i][1], z + VertexOffset[i][2])];
 					boxVector == EBlock::Stone || boxVector == EBlock::Sand ? GroundCube[i] = 1 : GroundCube[i] = 0;
-					boxVector == EBlock::Water ? WaterCube[i] = 1 : WaterCube[i] = 0;
+					boxVector == EBlock::Water ? water++: water;
+					boxVector != EBlock::Air && boxVector != EBlock::Null ? WaterCube[i] = 1 : WaterCube[i] = 0;
 					//if (boxVector == EBlock::Sand || boxVector == EBlock::Water) sand++;
 				}
 				/*if (sand < 4)
@@ -160,6 +161,7 @@ void AChunk::GenerateMesh()
 					March(x, y, z, GroundCube, MeshData, VertexCountGround, EBlock::Sand);
 				}*/
 				March(x, y, z, GroundCube, MeshData, VertexCountGround, EBlock::Stone);
+				if(water > 0)
 				March(x, y, z, WaterCube, MeshDataWater, VertexCountWater, EBlock::Water);
 			}
 		}
@@ -191,8 +193,14 @@ void AChunk::March(int X, int Y, int Z, const float Cube[8], FChunkMeshData& dat
 			EdgeVertex[i].X = X + (VertexOffset[EdgeConnection[i][0]][0] + .5 * EdgeDirection[i][0]); //.5 is our "interpolation" value (not interpolating)
 			EdgeVertex[i].Y = Y + (VertexOffset[EdgeConnection[i][0]][1] + .5 * EdgeDirection[i][1]);
 			EdgeVertex[i].Z = Z + (VertexOffset[EdgeConnection[i][0]][2] + .5 * EdgeDirection[i][2]);
-			/*if (BlockType == EBlock::Water)
-				EdgeVertex[i] -= (EdgeVertex[i] - PlanetCenter).GetSafeNormal() * 0.5;*/ //CAUSES PROBLEM with planet center = 0,0,0
+			
+				 //CAUSES PROBLEM with planet center = 0,0,0
+			if (BlockType == EBlock::Water)
+			{
+				FVector Change = PlanetCenter - (EdgeVertex[i] + GetActorLocation());
+				Change = Change.GetSafeNormal();
+				EdgeVertex[i] += Change * 0.5;
+			}
 		}
 	}
 
@@ -203,6 +211,8 @@ void AChunk::March(int X, int Y, int Z, const float Cube[8], FChunkMeshData& dat
 		FVector V1 = EdgeVertex[TriangleConnectionTable[VertexMask][3 * i]] * VoxelSize; //get a vertex of the triangle we should draw
 		FVector V2 = EdgeVertex[TriangleConnectionTable[VertexMask][3 * i + 1]] * VoxelSize;
 		FVector V3 = EdgeVertex[TriangleConnectionTable[VertexMask][3 * i + 2]] * VoxelSize;
+
+		
 
 		FVector Normal = FVector::CrossProduct(V2 - V1, V3 - V1);
 		Normal.Normalize();
