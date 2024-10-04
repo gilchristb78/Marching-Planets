@@ -34,9 +34,10 @@ void AChunk::GenerateVoxels()
 		{
 			for (int z = 0; z <= ChunkSize.Z; z++)
 			{
-				int Height = FVector::Dist(Position + (FVector(x, y, z)), PlanetCenter / VoxelSize);
+				float Height = FVector::Dist(Position + (FVector(x, y, z)), PlanetCenter / VoxelSize);
+				
 				FVector Normalized = (Position + FVector(x, y, z) - (PlanetCenter / VoxelSize)).GetSafeNormal() * PlanetRadius;
-				if (Height < (PlanetRadius + Noise->GetNoise(Normalized.X / ZoomLevel, Normalized .Y / ZoomLevel, Normalized.Z / ZoomLevel) * NoiseScaler))
+				if (Height <= (PlanetRadius + Noise->GetNoise(Normalized.X / ZoomLevel, Normalized .Y / ZoomLevel, Normalized.Z / ZoomLevel) * NoiseScaler))
 				{
 					Voxels[GetVoxelIndex(x, y, z)] = EBlock::Stone;
 				}
@@ -46,39 +47,11 @@ void AChunk::GenerateVoxels()
 				}
 				else
 				{
+					
 					Voxels[GetVoxelIndex(x, y, z)] = EBlock::Air;
 				}
 			}
-			//const int Height = FMath::Clamp(
-			//	FMath::RoundToInt(
-			//		(Noise->GetNoise((x + Position.X) / ZoomLevel, (y + Position.Y) / ZoomLevel) + 1)// 0 - 2
-			//		* ChunkHeight / 2), //0 - ChunkHeight
-			//	0, ChunkHeight); //ensure (clamp)
-
-			//for (int z = 0; z < Height; z++)
-			//{
-			//	if ((SeaLevel - Height >= 0 && Height - z <= 3))
-			//	{
-			//		Voxels[GetVoxelIndex(x, y, z)] = EBlock::Sand;
-			//	}
-			//	else
-			//	{
-			//		if (Noise->GetNoise(x + Position.X, y + Position.Y, z + Position.Z) > 0.35 && z > 2)
-			//		{
-			//			Voxels[GetVoxelIndex(x, y, z)] = EBlock::Air;
-			//		}
-			//		else 
-			//		{
-			//			Voxels[GetVoxelIndex(x, y, z)] = EBlock::Stone;
-			//		}
-			//		
-			//	}
-			//}
-
-			//for (int z = Height; z < SeaLevel; z++)
-			//{
-			//	Voxels[GetVoxelIndex(x, y, z)] = EBlock::Water;
-			//}
+		
 		}
 	}
 }
@@ -132,6 +105,7 @@ void AChunk::BeginPlay()
 	Noise->SetFractalLacunarity(FractalLacunarity);
 	Noise->SetFractalGain(FractalGain);
 
+
 	GenerateVoxels();
 
 	RenderChunk();
@@ -175,22 +149,17 @@ void AChunk::GenerateMesh()
 					EBlock boxVector = Voxels[GetVoxelIndex(x + VertexOffset[i][0], y + VertexOffset[i][1], z + VertexOffset[i][2])];
 					boxVector == EBlock::Stone || boxVector == EBlock::Sand ? GroundCube[i] = 1 : GroundCube[i] = 0;
 					boxVector == EBlock::Water ? WaterCube[i] = 1 : WaterCube[i] = 0;
-					if (boxVector == EBlock::Sand || boxVector == EBlock::Water) sand++;
+					//if (boxVector == EBlock::Sand || boxVector == EBlock::Water) sand++;
 				}
-
-				//if (WaterCube[0] == 1 || WaterCube[1] == 1 || WaterCube[2] == 1 || WaterCube[3] == 1) //hack to make water a flat surface
-				//{
-				//	WaterCube[0] = 1; WaterCube[1] = 1; WaterCube[2] = 1; WaterCube[3] = 1;
-				//}
-				if (sand < 4)
+				/*if (sand < 4)
 				{
 					March(x, y, z, GroundCube, MeshData, VertexCountGround, EBlock::Stone);
 				}
 				else
 				{
 					March(x, y, z, GroundCube, MeshData, VertexCountGround, EBlock::Sand);
-				}
-				
+				}*/
+				March(x, y, z, GroundCube, MeshData, VertexCountGround, EBlock::Stone);
 				March(x, y, z, WaterCube, MeshDataWater, VertexCountWater, EBlock::Water);
 			}
 		}
@@ -222,8 +191,8 @@ void AChunk::March(int X, int Y, int Z, const float Cube[8], FChunkMeshData& dat
 			EdgeVertex[i].X = X + (VertexOffset[EdgeConnection[i][0]][0] + .5 * EdgeDirection[i][0]); //.5 is our "interpolation" value (not interpolating)
 			EdgeVertex[i].Y = Y + (VertexOffset[EdgeConnection[i][0]][1] + .5 * EdgeDirection[i][1]);
 			EdgeVertex[i].Z = Z + (VertexOffset[EdgeConnection[i][0]][2] + .5 * EdgeDirection[i][2]);
-			if (BlockType == EBlock::Water)
-				EdgeVertex[i] -= (EdgeVertex[i] - PlanetCenter).GetSafeNormal() * 0.5;
+			/*if (BlockType == EBlock::Water)
+				EdgeVertex[i] -= (EdgeVertex[i] - PlanetCenter).GetSafeNormal() * 0.5;*/ //CAUSES PROBLEM with planet center = 0,0,0
 		}
 	}
 

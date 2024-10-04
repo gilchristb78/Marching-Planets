@@ -28,7 +28,7 @@ public:
 	int PlanetRadius = 100;
 
 	UPROPERTY(EditAnywhere, Category = "Chunk Gen")
-	int VoxelSize = 100; //TODO
+	float VoxelSize = 100; //TODO
 
 	UPROPERTY(EditAnywhere, Category = "Chunk Gen")
 	int NoiseScaler = 16;
