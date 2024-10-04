@@ -42,21 +42,29 @@ public:
 
 	void ApplyMesh() const;
 
+	UPROPERTY(EditAnywhere, Category = "Chunk Gen")
 	float Frequency = 0.01f;
+	UPROPERTY(EditAnywhere, Category = "Chunk Gen")
 	float SurfaceLevel = 0.0f;
 
-
+	UPROPERTY(EditAnywhere, Category = "Chunk Gen")
 	FIntVector ChunkSize;
+	UPROPERTY(EditAnywhere, Category = "Chunk Gen")
 	FVector PlanetCenter;
+	UPROPERTY(EditAnywhere, Category = "Chunk Gen")
 	int PlanetRadius;
+	UPROPERTY(EditAnywhere, Category = "Chunk Gen")
 	float NoiseScaler;
 	//int ChunkSize = 32;
-	
+	UPROPERTY(EditAnywhere, Category = "Chunk Gen")
 	float ZoomLevel = 1.0;
-	int VoxelSize = 100;
-
+	UPROPERTY(EditAnywhere, Category = "Chunk Gen")
+	float VoxelSize = 100;
+	UPROPERTY(EditAnywhere, Category = "Chunk Gen")
 	int FractalOctaves = 3;
+	UPROPERTY(EditAnywhere, Category = "Chunk Gen")
 	float FractalLacunarity = 2.0f;
+	UPROPERTY(EditAnywhere, Category = "Chunk Gen")
 	float FractalGain = 0.5f;
 
 	TObjectPtr<UMaterialInterface> Material;
