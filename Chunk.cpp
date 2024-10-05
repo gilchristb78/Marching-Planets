@@ -37,18 +37,19 @@ void AChunk::GenerateVoxels()
 				float Height = FVector::Dist(Position + (FVector(x, y, z)), PlanetCenter / VoxelSize);
 				
 				FVector Normalized = (Position + FVector(x, y, z) - (PlanetCenter / VoxelSize)).GetSafeNormal() * PlanetRadius;
-				if (Height <= (PlanetRadius + Noise->GetNoise(Normalized.X / ZoomLevel, Normalized .Y / ZoomLevel, Normalized.Z / ZoomLevel) * NoiseScaler))
+				float stoneMaxHeight = (PlanetRadius + Noise->GetNoise(Normalized.X / ZoomLevel, Normalized.Y / ZoomLevel, Normalized.Z / ZoomLevel) * NoiseScaler);
+				if (Height <= stoneMaxHeight)
 				{
-					Voxels[GetVoxelIndex(x, y, z)] = EBlock::Stone;
-				}
+					Voxels[GetVoxelIndex(x, y, z)] = FtempBlockStructFixLater(EBlock::Stone, (stoneMaxHeight - Height));//EBlock::Stone; 
+				}//to fix interpolation make this a value between -1 and 1, > 0 being the being stone <= being air / water
 				else if(Height < PlanetRadius)
 				{
-					Voxels[GetVoxelIndex(x, y, z)] = EBlock::Water;
-				}
+					Voxels[GetVoxelIndex(x, y, z)] = FtempBlockStructFixLater(EBlock::Water, (PlanetRadius - Height));//EBlock::Water;
+				}// ''' being water <= being air
 				else
 				{
 					
-					Voxels[GetVoxelIndex(x, y, z)] = EBlock::Air;
+					Voxels[GetVoxelIndex(x, y, z)] = FtempBlockStructFixLater(EBlock::Air, 1.0f);//EBlock::Air;
 				}
 			}
 		
@@ -87,8 +88,8 @@ void AChunk::RenderChunk()
 void AChunk::SetVoxelTo(FVector VoxelPos, EBlock blockType)
 {
 	int Index = GetVoxelIndex(round(VoxelPos.X), round(VoxelPos.Y), round(VoxelPos.Z));
-	if(Voxels[Index] != EBlock::Water)
-		Voxels[Index] = blockType;
+	if(Voxels[Index].block != EBlock::Water)
+		Voxels[Index].block = blockType;
 }
 
 // Called when the game starts or when spawned
@@ -146,10 +147,10 @@ void AChunk::GenerateMesh()
 				for (int i = 0; i < 8; i++)
 				{
 					
-					EBlock boxVector = Voxels[GetVoxelIndex(x + VertexOffset[i][0], y + VertexOffset[i][1], z + VertexOffset[i][2])];
-					boxVector == EBlock::Stone || boxVector == EBlock::Sand ? GroundCube[i] = 1 : GroundCube[i] = 0;
-					boxVector == EBlock::Water ? water++: water;
-					boxVector != EBlock::Air && boxVector != EBlock::Null ? WaterCube[i] = 1 : WaterCube[i] = 0;
+					FtempBlockStructFixLater boxVector = Voxels[GetVoxelIndex(x + VertexOffset[i][0], y + VertexOffset[i][1], z + VertexOffset[i][2])];
+					boxVector.block == EBlock::Stone || boxVector.block == EBlock::Sand ? GroundCube[i] = boxVector.val :  GroundCube[i] = -boxVector.val;
+					boxVector.block == EBlock::Water ? water++: water;
+					boxVector.block != EBlock::Air && boxVector.block != EBlock::Null ? WaterCube[i] = boxVector.val : WaterCube[i] = -boxVector.val;
 					//if (boxVector == EBlock::Sand || boxVector == EBlock::Water) sand++;
 				}
 				/*if (sand < 4)
@@ -190,11 +191,13 @@ void AChunk::March(int X, int Y, int Z, const float Cube[8], FChunkMeshData& dat
 	{
 		if ((EdgeMask & 1 << i) != 0)
 		{
-			EdgeVertex[i].X = X + (VertexOffset[EdgeConnection[i][0]][0] + .5 * EdgeDirection[i][0]); //.5 is our "interpolation" value (not interpolating)
-			EdgeVertex[i].Y = Y + (VertexOffset[EdgeConnection[i][0]][1] + .5 * EdgeDirection[i][1]);
-			EdgeVertex[i].Z = Z + (VertexOffset[EdgeConnection[i][0]][2] + .5 * EdgeDirection[i][2]);
+			bool offset = true;
+			float OffSett =  GetInterpolatedOffsett(Cube[EdgeConnection[i][0]], Cube[EdgeConnection[i][1]]);
+			EdgeVertex[i].X = X + (VertexOffset[EdgeConnection[i][0]][0] + OffSett * EdgeDirection[i][0]); //.5 is our "interpolation" value (not interpolating)
+			EdgeVertex[i].Y = Y + (VertexOffset[EdgeConnection[i][0]][1] + OffSett * EdgeDirection[i][1]);
+			EdgeVertex[i].Z = Z + (VertexOffset[EdgeConnection[i][0]][2] + OffSett * EdgeDirection[i][2]);
 			
-				 //CAUSES PROBLEM with planet center = 0,0,0
+				 
 			if (BlockType == EBlock::Water)
 			{
 				FVector Change = PlanetCenter - (EdgeVertex[i] + GetActorLocation());
@@ -251,6 +254,14 @@ void AChunk::March(int X, int Y, int Z, const float Cube[8], FChunkMeshData& dat
 		VertexIncrementer += 3;
 	}
 
+}
+
+float AChunk::GetInterpolatedOffsett(float V1, float V2)
+{
+
+
+	const float Delta = V2 - V1;
+	return Delta == 0.0f ? SurfaceLevel : (SurfaceLevel - V1) / Delta;
 }
 
 
