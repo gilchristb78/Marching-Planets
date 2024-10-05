@@ -7,6 +7,7 @@ Upgrading the Marching Cubes Reloaded Algorithm to create a spherical planet
 ### Planet Gen
 - [X] Interpolation between points
 - [ ] Vertex Normals instead of face normals
+- [ ] UV mapping
 - [ ] Noise for planet shape (distance to center equation)
 - [ ] Biomes
 - [ ] Volcanos / other natural features
