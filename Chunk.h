@@ -16,6 +16,29 @@ enum class EBlock
 };
 
 USTRUCT()
+
+struct FtempBlockStructFixLater
+{
+	GENERATED_BODY();
+
+public:
+
+	EBlock block;
+	float val;
+
+	FtempBlockStructFixLater(EBlock b, float v)
+	{
+		block = b;
+		val = v;
+	};
+
+	FtempBlockStructFixLater()
+	{
+
+	};
+};
+
+USTRUCT()
 struct FChunkMeshData
 {
 	GENERATED_BODY();
@@ -83,7 +106,7 @@ protected:
 	void GenerateMesh();
 
 private:
-	TArray<EBlock> Voxels;
+	TArray<FtempBlockStructFixLater> Voxels;
 
 	int GetVoxelIndex(int X, int Y, int Z) const;
 
@@ -95,7 +118,7 @@ private:
 	FChunkMeshData MeshDataWater;
 	int VertexCountGround = 0;
 	int VertexCountWater = 0; 
-
+	float GetInterpolatedOffsett(float V1, float V2);
 
 
 	int TriangleOrder[3] = { 0, 1, 2 };
