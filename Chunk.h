@@ -48,6 +48,8 @@ public:
 	TArray<FVector> Vertices;
 	TArray<int> Triangles;
 	TArray<FVector> Normals;
+	TMap<FVector, FVector> NormalSums;
+	TMap<FVector, int> NormalCount;
 	TArray<FVector2D> UV0;
 	TArray<FColor> Colors;
 };

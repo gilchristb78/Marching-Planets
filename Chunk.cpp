@@ -49,7 +49,7 @@ void AChunk::GenerateVoxels()
 				else
 				{
 					
-					Voxels[GetVoxelIndex(x, y, z)] = FtempBlockStructFixLater(EBlock::Air, 1.0f);//EBlock::Air;
+					Voxels[GetVoxelIndex(x, y, z)] = FtempBlockStructFixLater(EBlock::Air, -(PlanetRadius - std::max(Height,stoneMaxHeight)));//EBlock::Air;
 				}
 			}
 		
@@ -167,6 +167,20 @@ void AChunk::GenerateMesh()
 			}
 		}
 	}
+
+
+	//Vertex normals Attempt: ???? VVV ???
+	
+	
+	for (int i = 0; i < MeshData.Vertices.Num(); i++)
+	{
+		MeshData.Normals[i] = (MeshData.NormalSums[MeshData.Vertices[i]] / MeshData.NormalCount[MeshData.Vertices[i]]).GetSafeNormal();// / MeshData.NormalCount[MeshData.Vertices[i]];
+	}
+	for (int i = 0; i < MeshDataWater.Vertices.Num(); i++)
+	{
+		MeshDataWater.Normals[i] = (MeshDataWater.NormalSums[MeshDataWater.Vertices[i]] / MeshDataWater.NormalCount[MeshDataWater.Vertices[i]]).GetSafeNormal();
+	}
+
 }
 
 int AChunk::GetVoxelIndex(int X, int Y, int Z) const
@@ -229,8 +243,19 @@ void AChunk::March(int X, int Y, int Z, const float Cube[8], FChunkMeshData& dat
 		data.Triangles.Add(VertexIncrementer + TriangleOrder[2]);
 
 		data.Normals.Add(Normal);
+		
 		data.Normals.Add(Normal);
+		
 		data.Normals.Add(Normal);
+		
+		data.NormalSums.FindOrAdd(V1) += Normal;
+		data.NormalSums.FindOrAdd(V2) += Normal;
+		data.NormalSums.FindOrAdd(V3) += Normal;
+		data.NormalCount.FindOrAdd(V1)++;
+		data.NormalCount.FindOrAdd(V2)++;
+		data.NormalCount.FindOrAdd(V3)++;
+		
+		
 
 		if (BlockType == EBlock::Water)
 		{
