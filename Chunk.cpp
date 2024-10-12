@@ -28,11 +28,11 @@ void AChunk::GenerateVoxels()
 
 	FVector Position = GetActorLocation() / VoxelSize;
 
-	for (int x = 0; x <= ChunkSize.X; x++)
+	for (int x = 0; x <= ChunkSize.X + 2; x++)
 	{
-		for (int y = 0; y <= ChunkSize.Y; y++)
+		for (int y = 0; y <= ChunkSize.Y + 2; y++)
 		{
-			for (int z = 0; z <= ChunkSize.Z; z++)
+			for (int z = 0; z <= ChunkSize.Z + 2; z++)
 			{
 				float Height = FVector::Dist(Position + (FVector(x, y, z)), PlanetCenter / VoxelSize);
 				
@@ -40,16 +40,16 @@ void AChunk::GenerateVoxels()
 				float stoneMaxHeight = (PlanetRadius + Noise->GetNoise(Normalized.X / ZoomLevel, Normalized.Y / ZoomLevel, Normalized.Z / ZoomLevel) * NoiseScaler);
 				if (Height <= stoneMaxHeight)
 				{
-					Voxels[GetVoxelIndex(x, y, z)] = FtempBlockStructFixLater(EBlock::Stone, (stoneMaxHeight - Height));//EBlock::Stone; 
+					Voxels[GetVoxelIndex(x, y, z)] = FtempBlockStructFixLater(EBlock::Stone, (stoneMaxHeight - Height) / stoneMaxHeight);//EBlock::Stone; 
 				}//to fix interpolation make this a value between -1 and 1, > 0 being the being stone <= being air / water
 				else if(Height < PlanetRadius)
 				{
-					Voxels[GetVoxelIndex(x, y, z)] = FtempBlockStructFixLater(EBlock::Water, (PlanetRadius - Height));//EBlock::Water;
+					Voxels[GetVoxelIndex(x, y, z)] = FtempBlockStructFixLater(EBlock::Water, (PlanetRadius - Height) / PlanetRadius);//EBlock::Water;
 				}// ''' being water <= being air
 				else
 				{
 					
-					Voxels[GetVoxelIndex(x, y, z)] = FtempBlockStructFixLater(EBlock::Air, -(PlanetRadius - std::max(Height,stoneMaxHeight)));//EBlock::Air;
+					Voxels[GetVoxelIndex(x, y, z)] = FtempBlockStructFixLater(EBlock::Air, -(PlanetRadius - std::max(Height,stoneMaxHeight)) / std::max(Height, stoneMaxHeight));//EBlock::Air;
 				}
 			}
 		
@@ -97,7 +97,7 @@ void AChunk::BeginPlay()
 {
 	Super::BeginPlay();
 
-	Voxels.SetNum((ChunkSize.X + 1) * (ChunkSize.Y + 1) * (ChunkSize.Z + 1));
+	Voxels.SetNum((ChunkSize.X + 3) * (ChunkSize.Y + 3) * (ChunkSize.Z + 3));
 	Noise->SetSeed(2);
 	Noise->SetFrequency(Frequency);
 	Noise->SetNoiseType(FastNoiseLite::NoiseType_Perlin);
@@ -137,11 +137,11 @@ void AChunk::GenerateMesh()
 	float WaterCube[8] = {};
 	int water = 0;
 
-	for (int x = 0; x < ChunkSize.X; x++)
+	for (int x = 0; x < ChunkSize.X + 2; x++)
 	{
-		for (int y = 0; y < ChunkSize.Y; y++)
+		for (int y = 0; y < ChunkSize.Y + 2; y++)
 		{
-			for (int z = 0; z < ChunkSize.Z; z++)
+			for (int z = 0; z < ChunkSize.Z + 2; z++)
 			{
 				water = 0;
 				for (int i = 0; i < 8; i++)
@@ -185,11 +185,12 @@ void AChunk::GenerateMesh()
 
 int AChunk::GetVoxelIndex(int X, int Y, int Z) const
 {
-	return X * (ChunkSize.Y + 1) * (ChunkSize.Z + 1) + Y * (ChunkSize.Z + 1) + Z;
+	return X * (ChunkSize.Y + 3) * (ChunkSize.Z + 3) + Y * (ChunkSize.Z + 3) + Z;
 }
 
 void AChunk::March(int X, int Y, int Z, const float Cube[8], FChunkMeshData& data, int& VertexIncrementer, EBlock BlockType)
 {
+
 	int VertexMask = 0;
 	for (int i = 0; i < 8; i++) //set our vertex mask
 	{
@@ -234,20 +235,22 @@ void AChunk::March(int X, int Y, int Z, const float Cube[8], FChunkMeshData& dat
 		FVector Normal = FVector::CrossProduct(V2 - V1, V3 - V1);
 		Normal.Normalize();
 
-		data.Vertices.Add(V1);
-		data.Vertices.Add(V2);
-		data.Vertices.Add(V3);
+		if (!(X == 0 || Y == 0 || Z == 0 || X > ChunkSize.X  || Y > ChunkSize.Y  || Z > ChunkSize.Z ))
+		{
+			data.Vertices.Add(V1);
+			data.Vertices.Add(V2);
+			data.Vertices.Add(V3);
 
-		data.Triangles.Add(VertexIncrementer + TriangleOrder[0]);
-		data.Triangles.Add(VertexIncrementer + TriangleOrder[1]);
-		data.Triangles.Add(VertexIncrementer + TriangleOrder[2]);
+			data.Triangles.Add(VertexIncrementer + TriangleOrder[0]);
+			data.Triangles.Add(VertexIncrementer + TriangleOrder[1]);
+			data.Triangles.Add(VertexIncrementer + TriangleOrder[2]);
 
-		data.Normals.Add(Normal);
-		
-		data.Normals.Add(Normal);
-		
-		data.Normals.Add(Normal);
-		
+			data.Normals.Add(Normal);
+			data.Normals.Add(Normal);
+			data.Normals.Add(Normal);
+		}
+
+
 		data.NormalSums.FindOrAdd(V1) += Normal;
 		data.NormalSums.FindOrAdd(V2) += Normal;
 		data.NormalSums.FindOrAdd(V3) += Normal;
@@ -256,27 +259,30 @@ void AChunk::March(int X, int Y, int Z, const float Cube[8], FChunkMeshData& dat
 		data.NormalCount.FindOrAdd(V3)++;
 		
 		
+		if (!(X == 0 || Y == 0 || Z == 0 || X > ChunkSize.X  || Y > ChunkSize.Y  || Z > ChunkSize.Z  ))
+		{
+			if (BlockType == EBlock::Water)
+			{
+				data.Colors.Add(FColor(50, 100, 200));
+				data.Colors.Add(FColor(50, 100, 200));
+				data.Colors.Add(FColor(50, 100, 200));
+			}
+			else if (BlockType == EBlock::Sand)
+			{
+				data.Colors.Add(FColor(250, 250, 200));
+				data.Colors.Add(FColor(250, 250, 200));
+				data.Colors.Add(FColor(250, 250, 200));
+			}
+			else
+			{
+				data.Colors.Add(FColor(100, 100, 100));
+				data.Colors.Add(FColor(100, 100, 100));
+				data.Colors.Add(FColor(100, 100, 100));
+			}
+			VertexIncrementer += 3;
+		}
 
-		if (BlockType == EBlock::Water)
-		{
-			data.Colors.Add(FColor(50, 100, 200));
-			data.Colors.Add(FColor(50, 100, 200));
-			data.Colors.Add(FColor(50, 100, 200));
-		}
-		else if(BlockType == EBlock::Sand)
-		{
-			data.Colors.Add(FColor(250, 250, 200));
-			data.Colors.Add(FColor(250, 250, 200));
-			data.Colors.Add(FColor(250, 250, 200));
-		}
-		else 
-		{
-			data.Colors.Add(FColor(100, 100, 100));
-			data.Colors.Add(FColor(100, 100, 100));
-			data.Colors.Add(FColor(100, 100, 100));
-		}
-
-		VertexIncrementer += 3;
+		
 	}
 
 }
