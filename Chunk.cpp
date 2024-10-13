@@ -36,20 +36,29 @@ void AChunk::GenerateVoxels()
 			{
 				float Height = FVector::Dist(Position + (FVector(x, y, z)), PlanetCenter / VoxelSize);
 				
-				FVector Normalized = (Position + FVector(x, y, z) - (PlanetCenter / VoxelSize)).GetSafeNormal() * PlanetRadius;
-				float stoneMaxHeight = (PlanetRadius + Noise->GetNoise(Normalized.X / ZoomLevel, Normalized.Y / ZoomLevel, Normalized.Z / ZoomLevel) * NoiseScaler);
+				FVector Normalized = (Position + FVector(x, y, z) - (PlanetCenter / VoxelSize)).GetSafeNormal() * 250;
+				float stoneMaxHeight = PlanetRadius + (Noise->GetNoise(Normalized.X / ZoomLevel, Normalized.Y / ZoomLevel, Normalized.Z / ZoomLevel) * NoiseScaler);
+				//float stoneMaxHeight = PlanetRadius;
 				if (Height <= stoneMaxHeight)
 				{
-					Voxels[GetVoxelIndex(x, y, z)] = FtempBlockStructFixLater(EBlock::Stone, (stoneMaxHeight - Height) / stoneMaxHeight);//EBlock::Stone; 
+					if (Height > stoneMaxHeight - 2 && Height <= PlanetRadius)
+					{
+						Voxels[GetVoxelIndex(x, y, z)] = FtempBlockStructFixLater(EBlock::Sand, (stoneMaxHeight - Height) / stoneMaxHeight, (PlanetRadius - Height) / PlanetRadius);//EBlock::Sand;
+					}
+					else
+					{
+						Voxels[GetVoxelIndex(x, y, z)] = FtempBlockStructFixLater(EBlock::Stone, (stoneMaxHeight - Height) / stoneMaxHeight, (PlanetRadius - Height) / PlanetRadius);//EBlock::Stone;
+					}
+					
 				}//to fix interpolation make this a value between -1 and 1, > 0 being the being stone <= being air / water
 				else if(Height < PlanetRadius)
 				{
-					Voxels[GetVoxelIndex(x, y, z)] = FtempBlockStructFixLater(EBlock::Water, (PlanetRadius - Height) / PlanetRadius);//EBlock::Water;
+					Voxels[GetVoxelIndex(x, y, z)] = FtempBlockStructFixLater(EBlock::Water, (PlanetRadius - Height) / PlanetRadius, -(stoneMaxHeight - Height) / stoneMaxHeight);//EBlock::Water;
 				}// ''' being water <= being air
 				else
 				{
 					
-					Voxels[GetVoxelIndex(x, y, z)] = FtempBlockStructFixLater(EBlock::Air, -(PlanetRadius - std::max(Height,stoneMaxHeight)) / std::max(Height, stoneMaxHeight));//EBlock::Air;
+					Voxels[GetVoxelIndex(x, y, z)] = FtempBlockStructFixLater(EBlock::Air, -(PlanetRadius - Height) / PlanetRadius, -(stoneMaxHeight - Height) / stoneMaxHeight);//EBlock::Air; Water needs an alt?
 				}
 			}
 		
@@ -148,9 +157,9 @@ void AChunk::GenerateMesh()
 				{
 					
 					FtempBlockStructFixLater boxVector = Voxels[GetVoxelIndex(x + VertexOffset[i][0], y + VertexOffset[i][1], z + VertexOffset[i][2])];
-					boxVector.block == EBlock::Stone || boxVector.block == EBlock::Sand ? GroundCube[i] = boxVector.val :  GroundCube[i] = -boxVector.val;
+					boxVector.block == EBlock::Stone || boxVector.block == EBlock::Sand ? GroundCube[i] = boxVector.val :  GroundCube[i] = -boxVector.valalt; //this is jank but works now, fix later
 					boxVector.block == EBlock::Water ? water++: water;
-					boxVector.block != EBlock::Air && boxVector.block != EBlock::Null ? WaterCube[i] = boxVector.val : WaterCube[i] = -boxVector.val;
+					boxVector.block == EBlock::Water ? WaterCube[i] = boxVector.val : boxVector.block != EBlock::Air && boxVector.block != EBlock::Null ? WaterCube[i] = boxVector.valalt  : WaterCube[i] = -boxVector.val;
 					//if (boxVector == EBlock::Sand || boxVector == EBlock::Water) sand++;
 				}
 				/*if (sand < 4)
@@ -217,7 +226,7 @@ void AChunk::March(int X, int Y, int Z, const float Cube[8], FChunkMeshData& dat
 			{
 				FVector Change = PlanetCenter - (EdgeVertex[i] + GetActorLocation());
 				Change = Change.GetSafeNormal();
-				EdgeVertex[i] += Change * 0.5;
+				EdgeVertex[i] += Change * 0.4 * VoxelSize;
 			}
 		}
 	}
@@ -230,7 +239,12 @@ void AChunk::March(int X, int Y, int Z, const float Cube[8], FChunkMeshData& dat
 		FVector V2 = EdgeVertex[TriangleConnectionTable[VertexMask][3 * i + 1]] * VoxelSize;
 		FVector V3 = EdgeVertex[TriangleConnectionTable[VertexMask][3 * i + 2]] * VoxelSize;
 
-		
+		/*if (BlockType == EBlock::Water)
+		{
+			V1 -= (V1 - PlanetCenter).GetSafeNormal() * VoxelSize * 0.2;
+			V2 -= (V2 - PlanetCenter).GetSafeNormal() * VoxelSize * 0.2;
+			V3 -= (V3 - PlanetCenter).GetSafeNormal() * VoxelSize * 0.2;
+		}*/
 
 		FVector Normal = FVector::CrossProduct(V2 - V1, V3 - V1);
 		Normal.Normalize();
@@ -248,6 +262,10 @@ void AChunk::March(int X, int Y, int Z, const float Cube[8], FChunkMeshData& dat
 			data.Normals.Add(Normal);
 			data.Normals.Add(Normal);
 			data.Normals.Add(Normal);
+
+			data.UV0.Add(FVector2D(((V1 + GetActorLocation()) / PlanetRadius).X, ((V1 + GetActorLocation()) / PlanetRadius).Y));
+			data.UV0.Add(FVector2D(((V2 + GetActorLocation()) / PlanetRadius).X, ((V2 + GetActorLocation()) / PlanetRadius).Y));
+			data.UV0.Add(FVector2D(((V3 + GetActorLocation()) / PlanetRadius).X, ((V3 + GetActorLocation()) / PlanetRadius).Y));
 		}
 
 
@@ -267,11 +285,17 @@ void AChunk::March(int X, int Y, int Z, const float Cube[8], FChunkMeshData& dat
 				data.Colors.Add(FColor(50, 100, 200));
 				data.Colors.Add(FColor(50, 100, 200));
 			}
+			else if (BlockType == EBlock::Stone)
+			{
+				data.Colors.Add(FColor(25, 25, 25));
+				data.Colors.Add(FColor(25, 25, 25));
+				data.Colors.Add(FColor(25, 25, 25));
+			}
 			else if (BlockType == EBlock::Sand)
 			{
-				data.Colors.Add(FColor(250, 250, 200));
-				data.Colors.Add(FColor(250, 250, 200));
-				data.Colors.Add(FColor(250, 250, 200));
+				data.Colors.Add(FColor(250, 0, 0));
+				data.Colors.Add(FColor(250, 0, 0));
+				data.Colors.Add(FColor(250, 0, 0));
 			}
 			else
 			{
