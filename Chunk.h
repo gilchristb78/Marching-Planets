@@ -25,11 +25,20 @@ public:
 
 	EBlock block;
 	float val;
+	float valalt;
 
 	FtempBlockStructFixLater(EBlock b, float v)
 	{
 		block = b;
 		val = v;
+		valalt = v;
+	};
+
+	FtempBlockStructFixLater(EBlock b, float v, float va)
+	{
+		block = b;
+		val = v;
+		valalt = va;
 	};
 
 	FtempBlockStructFixLater()
