@@ -9,10 +9,11 @@ Upgrading the Marching Cubes Reloaded Algorithm to create a spherical planet
   - [X] As Is
   - [X] Add ring of verteces around chunk so normals are correct
   - [ ] fix jank
-- [X] Vertex Normals instead of face normals ~ maybe got it working a bit, gotta look into more and check with proper uv mapping
+- [X] Vertex Normals instead of face normals
+- [X] Fix overlapping water chunks
 - [ ] Colors / Materials
   - [ ] Colors on standard mat
-    - [ ] one for stone one for water
+    - [X] one for stone one for water
     - [ ] add sand (spawns in stone mat)
     - [ ] add minerals / colors
   - [ ] Other mats
