@@ -224,9 +224,9 @@ void AChunk::March(int X, int Y, int Z, const float Cube[8], FChunkMeshData& dat
 				 
 			if (BlockType == EBlock::Water)
 			{
-				FVector Change = PlanetCenter - (EdgeVertex[i] + GetActorLocation());
+				FVector Change = (EdgeVertex[i] * VoxelSize + GetActorLocation()) - PlanetCenter;
 				Change = Change.GetSafeNormal();
-				EdgeVertex[i] += Change * 0.4 * VoxelSize;
+				EdgeVertex[i] -= Change * 0.4 * VoxelSize;
 			}
 		}
 	}
